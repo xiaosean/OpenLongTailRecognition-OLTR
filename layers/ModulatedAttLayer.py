@@ -7,10 +7,11 @@ from torch.nn import functional as F
 
 import pdb
 
+
 # TODO: implement dot_product and other non-local formats
 class ModulatedAttLayer(nn.Module):
 
-    def __init__(self, in_channels, reduction = 2, mode='embedded_gaussian'):
+    def __init__(self, in_channels, reduction=2, mode='embedded_gaussian'):
         super(ModulatedAttLayer, self).__init__()
         self.in_channels = in_channels
         self.reduction = reduction
@@ -18,10 +19,10 @@ class ModulatedAttLayer(nn.Module):
         self.mode = mode
         assert mode in ['embedded_gaussian']
 
-        self.g = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size = 1)
-        self.theta = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size = 1)
-        self.phi = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size = 1)
-        self.conv_mask = nn.Conv2d(self.inter_channels, self.in_channels, kernel_size = 1, bias=False)
+        self.g = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size=1)
+        self.theta = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size=1)
+        self.phi = nn.Conv2d(self.in_channels, self.inter_channels, kernel_size=1)
+        self.conv_mask = nn.Conv2d(self.inter_channels, self.in_channels, kernel_size=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
 
         self.avgpool = nn.AvgPool2d(7, stride=1)
@@ -57,9 +58,9 @@ class ModulatedAttLayer(nn.Module):
         map_ = map_.permute(0, 2, 1).contiguous()
         map_ = map_.view(batch_size, self.inter_channels, x.size(2), x.size(3))
         mask = self.conv_mask(map_)
-        
+
         x_flatten = x.view(-1, 7 * 7 * self.in_channels)
-        
+
         # channel_att = self.fc_channel(x_flatten)
         # channel_att = channel_att.softmax(dim=1)
 
@@ -68,18 +69,18 @@ class ModulatedAttLayer(nn.Module):
 
         # selector = self.fc_selector(x_flatten)
         # selector = selector.sigmoid()
-        
+
         # class_count = torch.LongTensor(class_count)
         # class_type = torch.ones_like(class_count)
         # class_type[class_count > 100] = 0
         # class_type[class_count < 20] = 2
         # labels_type = class_type[labels]
-        
+
         # loss_attention = self.triplet_loss(channel_selector, labels_type)
         # loss_attention = 0.0
 
         # channel_att = channel_att.unsqueeze(2).unsqueeze(3).expand(-1, -1, 7, 7)
-        
+
         spatial_att = spatial_att.view(-1, 7, 7).unsqueeze(1)
         spatial_att = spatial_att.expand(-1, self.in_channels, -1, -1)
 

@@ -4,6 +4,7 @@ from torch.autograd.function import Function
 
 import pdb
 
+
 class DiscCentroidsLoss(nn.Module):
     def __init__(self, num_classes, feat_dim, size_average=True):
         super(DiscCentroidsLoss, self).__init__()
@@ -15,21 +16,18 @@ class DiscCentroidsLoss(nn.Module):
 
     def forward(self, feat, label):
         batch_size = feat.size(0)
-        
         # calculate attracting loss
-
         feat = feat.view(batch_size, -1)
         # To check the dim of centroids and features
         if feat.size(1) != self.feat_dim:
             raise ValueError("Center's dim: {0} should be equal to input feature's \
-                            dim: {1}".format(self.feat_dim,feat.size(1)))
+                            dim: {1}".format(self.feat_dim, feat.size(1)))
         batch_size_tensor = feat.new_empty(1).fill_(batch_size if self.size_average else 1)
         loss_attract = self.disccentroidslossfunc(feat, label, self.centroids, batch_size_tensor).squeeze()
-        
-        # calculate repelling loss
 
+        # calculate repelling loss
         distmat = torch.pow(feat, 2).sum(dim=1, keepdim=True).expand(batch_size, self.num_classes) + \
-                  torch.pow(self.centroids, 2).sum(dim=1, keepdim=True).expand(self.num_classes, batch_size).t()
+            torch.pow(self.centroids, 2).sum(dim=1, keepdim=True).expand(self.num_classes, batch_size).t()
         distmat.addmm_(1, -2, feat, self.centroids.t())
 
         classes = torch.arange(self.num_classes).long().cuda()
@@ -67,11 +65,10 @@ class DiscCentroidsLossFunc(Function):
 
         counts = counts.scatter_add_(0, label.long(), ones)
         grad_centroids.scatter_add_(0, label.unsqueeze(1).expand(feature.size()).long(), diff)
-        grad_centroids = grad_centroids/counts.view(-1, 1)
+        grad_centroids = grad_centroids / counts.view(-1, 1)
         return - grad_output * diff / batch_size, None, grad_centroids / batch_size, None
 
 
-    
-def create_loss (feat_dim=512, num_classes=1000):
+def create_loss(feat_dim=512, num_classes=1000):
     print('Loading Discriminative Centroids Loss.')
     return DiscCentroidsLoss(num_classes, feat_dim)
